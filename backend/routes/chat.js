@@ -1,18 +1,50 @@
 /* 
 1. list out all private chat that a specific user have [done][not check]
-2. list out all group chat that a specific user have 
-3. send message in a chat[done]/groupchat
+3. send message in a chat[done]
 4. create a private chat [done]
-5. create a group chat 
-6. update group member of a groupchat [for quit group]
-7. del a group chat 
-8. list out all message that a chat/groupchat have
+8. list out all message that a chat have[ done]
 
 */
+
+const Pusher = require('pusher');
+const mongoose = require('mongoose');
 const router = require('express').Router();
 let User = require("../models/user.model")
-let {PrivateChat,GroupChat} = require("../models/chat.model") 
-let getUserObjectId = require("../common")
+let {PrivateChat} = require("../models/chat.model") 
+let getUserObjectId = require("../common");
+const e = require('express');
+
+//setting up pusher
+const pusher = new Pusher({
+    appId: "1368918",
+    key: "9bfa9c67db40709d3f03",
+    secret: "f08e4e49490ba7e38409",
+    cluster: "ap1",
+    useTLS: true
+})
+
+const db = mongoose.connection;
+db.once('open', () => {
+    const chatHistoryCollection = db.collection('privatechats');
+    const changeStream = chatHistoryCollection.watch();
+    changeStream.on("change", (change) => {
+        // console.log("change", change)
+        if (change.operationType === 'update') {
+            const cursor = db.collection('privatechats').find().toArray((err, results) => {
+                const resultsDetails = results[0].chatHistory;
+                const latestMessage = resultsDetails[resultsDetails.length-1];
+                pusher.trigger('messages', 'inserted', 
+                    {
+                        message: latestMessage.text,
+                    }
+                );
+            });
+        } else {
+            console.log("Error triggering Pusher");
+        }
+    });
+});
+
 //start a Private Chat
 
 //check whether the Private Chat already existed by searching the 2 users
@@ -87,7 +119,7 @@ router.post("/private/sendMessage",async(req,res)=>{
             console.log(err)
             return res.status(400).json({msg:"Sth goes wrong"})
         }else{
-            if(results==""){
+            if(results== null){
                 return res.status(400).json({msg:"This Chat doesn't exist"})
             }
             results.chatHistory.push({speaker:userObjectId,text:req.body.content,time:Date()})

@@ -1,0 +1,12 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  flex: 0.25;
+}
+
+.chats {
+  flex: 1;
+  background-color: rgb(64, 66, 79);
+  overflow-x: hidden;
+  border: solid 1px;
+}
