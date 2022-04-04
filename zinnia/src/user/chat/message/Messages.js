@@ -1,15 +1,17 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import {DateTime} from 'luxon';
 import "./Messages.css";
 
-function Messages(){
+function Messages({messages}){
     // const user = currentUser.userId;
     // const username = currentUser.username;
     // const chatId = currentUser.chatObjectId;
     const [input, setInput] = useState("");
+    const arrayOfMessages = Array.from(messages);
 
     const sendMessage = async (e) => {
         e.preventDefault();
-        await fetch(`http://localhost:8080/private/sendMessage`, {
+        await fetch("http://localhost:8080/private/sendMessage", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -35,26 +37,26 @@ function Messages(){
                 </div>
             </div>
             <div className="messages-body">
-                {/* {messages.map((message) => (
+                {arrayOfMessages.map((message) => (
                     <p className="message">
                         <span className="message-name">
-                            Name
+                            {message.speaker.username}
                         </span>
-                            {message.message}
+                            {message.text}
                         <span className="message-timestamp">
-                            {new Date().toUTCString()}
+                            {DateTime.fromISO(message.time).toLocaleString(DateTime.DATETIME_MED)}
                         </span>
                     </p>
-                ))} */}
+                ))}
                
 
-                <p className="message recieved">
+                {/* <p className="message recieved">
                     <span className="message-name">Name</span>
                     Message
                     <span className="message-timestamp">
                         {new Date().toUTCString()}
                     </span>
-                </p>
+                </p> */}
             </div>
             <div className="messages-footer">
                 <form>

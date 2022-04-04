@@ -15,29 +15,39 @@ import Sidebar from "./sidebar/Sidebar"
 import Messages from "./message/Messages";
 import Pusher from 'pusher-js';
 
-function Chat() {
+function Chat(chat_id) {
 
-    const [_id, set_id] = useState("")
+    const [_id, set_id] = useState(chat_id);
     const [userId, setUserId] = useState(0);
     const [messages, setMessages] = useState([]);
-
-    useEffect(() => {
-        setUserId(2);
-        set_id("623cbea7f8e153effa4bcac0");
-        fetch(`http://localhost:8080/chat/private/displayMessage`, {
+    const get_id = async (newId) => {
+         await fetch("http://localhost:8080/private/displayMessage", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                // 'Access-Control-Allow-Origin': *
             },
-            body: JSON.stringify({
-                userId: userId,
-                chatObjectId: _id}),
             mode: 'cors',
+            body: JSON.stringify({
+                chatObjectId: newId})
         })
         .then(res => {
-            console.log(res);
-            setMessages(res);
+            // console.log(res.json());
+            return res.json();
         })
+        .then(data => {
+            console.log(data);
+            // const data = JSON.parse(result);
+            // console.log(data);
+            setMessages(data.chatHistory);
+        })
+        .catch((e) => console.log(e));
+    }
+
+    useEffect(() => {
+        setUserId(2);
+        // get_id(_id)
+        get_id("62471a0997d5113678ca44e8");
     }, []);
 
     useEffect(() => {
@@ -54,7 +64,7 @@ function Chat() {
         const channel = pusher.subscribe('messages');
         channel.bind('inserted', (newMessage) => {
             alert(JSON.stringify(newMessage));
-            setMessages([...messages, newMessage])
+            setMessages([...messages, newMessage]);
         });
 
         return () => {
@@ -69,7 +79,7 @@ function Chat() {
         <div className="chat">
             <div className="chat-body">
                 <Sidebar />
-                <Messages messages={messages}/>
+                <Messages key={_id} messages={messages}/>
             </div>
         </div>
     );

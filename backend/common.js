@@ -13,4 +13,17 @@ var getUserObjectId = async(userId)=>{
     return writerId;
 }
 
+// Obtaining username from userId
+const getUsername = async (userId) => {
+    const username = "";
+    try{
+        const response = await User.findOne({userId:userId});
+        if (response != null) 
+            {username = response.username}
+    } catch(err) {
+        console.log(err);
+    }
+    return username;
+}
+
 module.exports = getUserObjectId

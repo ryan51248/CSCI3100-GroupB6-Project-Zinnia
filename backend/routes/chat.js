@@ -12,6 +12,7 @@ const router = require('express').Router();
 let User = require("../models/user.model")
 let {PrivateChat} = require("../models/chat.model") 
 let getUserObjectId = require("../common");
+let getUsername = require("../common");
 const e = require('express');
 
 //setting up pusher
@@ -28,7 +29,6 @@ db.once('open', () => {
     const chatHistoryCollection = db.collection('privatechats');
     const changeStream = chatHistoryCollection.watch();
     changeStream.on("change", (change) => {
-        // console.log("change", change)
         if (change.operationType === 'update') {
             const cursor = db.collection('privatechats').find().toArray((err, results) => {
                 const resultsDetails = results[0].chatHistory;
@@ -108,7 +108,8 @@ router.get("/private/:userId/viewAllChat",async(req,res)=>{
 // send message in a private chat
 // body input: userId[speaker],chatObjectId, content
 router.post("/private/sendMessage",async(req,res)=>{
-    const userObjectId = await getUserObjectId(req.body.userId)
+    const userObjectId = await getUserObjectId(req.body.userId);
+    const username = await getUsername(req.body.userId);
     if (userObjectId==""){
         return res.status(400).json({msg:"This user doesn't exist"})
     }else if(req.body.content ==""){
@@ -122,7 +123,7 @@ router.post("/private/sendMessage",async(req,res)=>{
             if(results== null){
                 return res.status(400).json({msg:"This Chat doesn't exist"})
             }
-            results.chatHistory.push({speaker:userObjectId,text:req.body.content,time:Date()})
+            results.chatHistory.push({speaker:{_id:userObjectId, userId:req.body.userId, username:username},text:req.body.content,time:Date()})
             results.save()
             return res.status(200).json({msg:"Messages are sent"})
         }
@@ -132,7 +133,11 @@ router.post("/private/sendMessage",async(req,res)=>{
 //display all message that a Private Chat have
 //body input: userId?(need to discuss), ChatObjectId 
 router.post("/private/displayMessage",async(req,res)=>{
-    PrivateChat.findOne({_id:req.body.chatObjectId})
+    // console.log(req.body);
+    const new_id = req.body.chatObjectId.trim();
+    const trimmed = mongoose.Types.ObjectId.createFromHexString(new_id);
+    // console.log("new_id", new_id);
+    PrivateChat.findOne({_id:trimmed})
     .select(["chatHistory"])
     .sort({"chatHistory.time":-1})
     .populate("chatHistory.speaker",["username","userId"])
@@ -141,7 +146,7 @@ router.post("/private/displayMessage",async(req,res)=>{
             console.log(err)
             return res.status(400).json({msg:"Sth goes wrong"})
         }else{
-            res.status(200).json(results)
+            return res.status(200).json(results)
         }
     })
 })
