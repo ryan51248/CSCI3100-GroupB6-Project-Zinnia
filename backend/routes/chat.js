@@ -67,6 +67,7 @@ db.once('open', () => {
     });
 });
 
+let getUserObjectId = require("../common")
 //start a Private Chat
 
 //check whether the Private Chat already existed by searching the 2 users
