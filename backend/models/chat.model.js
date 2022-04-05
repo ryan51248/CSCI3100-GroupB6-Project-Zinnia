@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 
 const PrivateChatSchema = new Schema({
     user: [{ type: Schema.Types.ObjectId, ref: "User"}],
-    chatHistory:[{speaker:{ type: Schema.Types.ObjectId, ref: "User"},text:String,time:Date}],
+    chatHistory:[{speaker:{ type: Schema.Types.ObjectId, ref: "User"},username:String,userId:Number,text:String,time:Date}],
 }, {
     timestamps: true,
 });

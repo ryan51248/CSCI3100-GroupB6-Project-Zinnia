@@ -15,71 +15,106 @@ import Sidebar from "./sidebar/Sidebar"
 import Messages from "./message/Messages";
 import Pusher from 'pusher-js';
 
-function Chat(chat_id) {
+function Chat({user_id}) {
 
-    const [_id, set_id] = useState(chat_id);
-    const [userId, setUserId] = useState(0);
+    // const chatId = chat_id;
+    const [chatId, setChatId] = useState("624c4ce3ec2df708252fbc7b");
+    // const userId = user_id;
+    const userId = 2;
     const [messages, setMessages] = useState([]);
-    const get_id = async (newId) => {
-         await fetch("http://localhost:8080/private/displayMessage", {
+    const [chats, setChats] = useState([]);
+
+    // Obtaining messages
+    const getMessages = async (chat_id) => {
+        await fetch("http://localhost:8080/private/displayMessage", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // 'Access-Control-Allow-Origin': *
             },
             mode: 'cors',
             body: JSON.stringify({
-                chatObjectId: newId})
+                chatObjectId: chat_id})
         })
         .then(res => {
-            // console.log(res.json());
             return res.json();
         })
         .then(data => {
-            console.log(data);
-            // const data = JSON.parse(result);
             // console.log(data);
+            // console.log(data.chatHistory);
             setMessages(data.chatHistory);
         })
         .catch((e) => console.log(e));
     }
 
+    //Obtaining chats
+    const getChats = async (user_id) => {
+        await fetch(`http://localhost:8080/private/${user_id}/viewAllChat`)
+        .then(res => {
+            return res.json();
+        })
+        .then(chats => {
+            setChats(chats);
+            return chats;
+        })
+        .then(chats => {
+            setChatId(chats[0]._id);
+            return chats[0]._id;
+        })
+        // .then((chat_id) => {
+            
+        // })
+    }
+
+    //componentDidMount
     useEffect(() => {
-        setUserId(2);
-        // get_id(_id)
-        get_id("62471a0997d5113678ca44e8");
+        getChats(userId);    
+        getMessages(chatId);
     }, []);
 
+    // Pusher for updating messages
     useEffect(() => {
-
-    })
-
-    useEffect(() => {
-        const pusher = new Pusher('9bfa9c67db40709d3f03', 
+        const messagePusher = new Pusher('9bfa9c67db40709d3f03', 
             {
                 cluster: 'ap1'
             }
         );
 
-        const channel = pusher.subscribe('messages');
-        channel.bind('inserted', (newMessage) => {
-            alert(JSON.stringify(newMessage));
+        const messageChannel = messagePusher.subscribe('messages');
+        messageChannel.bind('insertedMessages', (newMessage) => {
+            console.log(newMessage);
             setMessages([...messages, newMessage]);
         });
 
         return () => {
-            channel.unbind_all();
-            channel.unsubscribe();
+            messageChannel.unbind_all();
+            messageChannel.unsubscribe();
         }
     }, [messages]);
 
-    // console.log(messages);
+    //Pusher for updating chats
+    // useEffect(() => {
+    //     const chatPusher = new Pusher('9bfa9c67db40709d3f03', 
+    //         {
+    //             cluster: 'ap1'
+    //         }
+    //     );
+
+    //     const chatChannel = chatPusher.subscribe('chats');
+    //     chatChannel.bind('insertedChats', (newChat) => {
+    //         setMessages([...chats, newChat]);
+    //     });
+
+    //     return () => {
+    //         chatChannel.unbind_all();
+    //         chatChannel.unsubscribe();
+    //     }
+    // }, [chats]);
 
     return(
         <div className="chat">
             <div className="chat-body">
-                <Sidebar />
-                <Messages key={_id} messages={messages}/>
+                <Sidebar user_id={userId} chats={chats}/>
+                <Messages key={chatId} messages={messages} user_id={userId} chat_id={chatId}/>
             </div>
         </div>
     );

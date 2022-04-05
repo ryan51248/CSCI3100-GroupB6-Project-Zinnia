@@ -11,8 +11,8 @@ const mongoose = require('mongoose');
 const router = require('express').Router();
 let User = require("../models/user.model")
 let {PrivateChat} = require("../models/chat.model") 
-let getUserObjectId = require("../common");
-let getUsername = require("../common");
+let getUserObjectId = require("../common").getUserObjectId;
+let getUsername = require("../common").getUsername;
 const e = require('express');
 
 //setting up pusher
@@ -30,17 +30,39 @@ db.once('open', () => {
     const changeStream = chatHistoryCollection.watch();
     changeStream.on("change", (change) => {
         if (change.operationType === 'update') {
-            const cursor = db.collection('privatechats').find().toArray((err, results) => {
+            db.collection('privatechats').find().toArray((err, results) => {
                 const resultsDetails = results[0].chatHistory;
                 const latestMessage = resultsDetails[resultsDetails.length-1];
-                pusher.trigger('messages', 'inserted', 
-                    {
-                        message: latestMessage.text,
-                    }
-                );
+                // const speakingUser = User.findOne({_id: latestMessage.speaker});
+                console.log(latestMessage);
+                // const userId = getUserId()
+                pusher.trigger('messages', 'insertedMessages', 
+                {
+                    speaker: {_id: latestMessage.speaker, userId: latestMessage.userId, username: latestMessage.username},
+                    text: latestMessage.text,
+                    time: latestMessage.time,
+                    _id: change.documentKey._id
+                });
             });
         } else {
-            console.log("Error triggering Pusher");
+            // console.log("Error triggering messagePusher");
+        }
+        if (change.operationType === 'insert') {
+            const chatDetails = change.fullDocument;
+            const user0 = User.findOne({_id:chatDetails.user[0]._id});
+            const user1 = User.findOne({_id:chatDetails.user[1]._id});
+            pusher.trigger('chats', 'insertedChats',
+            {
+                chatHistory: [],
+                createdAt: chatDetails.createdAt,
+                updatedAt: chatDetails.updatedAt,
+                user: [ {_id:user0._id, userId: user0.userId, username: user0.username},
+                        {_id:user1._id, userId: user1.userId, username: user1.username} ],
+                __v: chatDetails.__v,
+                _id: chatDetails._id
+            });
+        } else {
+            // console.log("Error triggering chatPusher");
         }
     });
 });
@@ -58,6 +80,7 @@ var IsPrivateChatExisted= async(users)=>{
     }
     return existed
 }
+
 //create a new Private Chat
 // body input: user1, user2
 router.post("/private/createChat",async(req,res)=>{
@@ -108,6 +131,7 @@ router.get("/private/:userId/viewAllChat",async(req,res)=>{
 // send message in a private chat
 // body input: userId[speaker],chatObjectId, content
 router.post("/private/sendMessage",async(req,res)=>{
+    // console.log(req.body);
     const userObjectId = await getUserObjectId(req.body.userId);
     const username = await getUsername(req.body.userId);
     if (userObjectId==""){
@@ -123,7 +147,8 @@ router.post("/private/sendMessage",async(req,res)=>{
             if(results== null){
                 return res.status(400).json({msg:"This Chat doesn't exist"})
             }
-            results.chatHistory.push({speaker:{_id:userObjectId, userId:req.body.userId, username:username},text:req.body.content,time:Date()})
+            // console.log(userObjectId + " " + req.body.userId + " " + username);
+            results.chatHistory.push({speaker:{_id:userObjectId},userId:req.body.userId,username:username,text:req.body.text,time:Date()})
             results.save()
             return res.status(200).json({msg:"Messages are sent"})
         }
@@ -133,11 +158,8 @@ router.post("/private/sendMessage",async(req,res)=>{
 //display all message that a Private Chat have
 //body input: userId?(need to discuss), ChatObjectId 
 router.post("/private/displayMessage",async(req,res)=>{
-    // console.log(req.body);
-    const new_id = req.body.chatObjectId.trim();
-    const trimmed = mongoose.Types.ObjectId.createFromHexString(new_id);
-    // console.log("new_id", new_id);
-    PrivateChat.findOne({_id:trimmed})
+    const new_id = mongoose.Types.ObjectId(req.body.chatObjectId);
+    PrivateChat.findOne({_id:new_id})
     .select(["chatHistory"])
     .sort({"chatHistory.time":-1})
     .populate("chatHistory.speaker",["username","userId"])

@@ -33,6 +33,14 @@
   overflow-x: hidden;
 }
 
+.messages-body::-webkit-scrollbar {
+  visibility: hidden;
+}
+
+.messages-body:active::-webkit-scrollbar {
+  visibility: visible;
+}
+
 .message {
   position: relative;
   font-size: 16px;
@@ -45,7 +53,7 @@
   border-bottom: solid 1px #ffffff;
 }
 
-.recieved {
+.received {
   margin-left: auto;
 }
 

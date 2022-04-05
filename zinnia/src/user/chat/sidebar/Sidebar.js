@@ -3,17 +3,22 @@ import "./Sidebar.css";
 import SidebarChat from "./SidebarChat";
 import Searchbar from './searchbar/Searchbar';
 
-function Sidebar() {
+function Sidebar({user_id, chats}) {
 
-    // const [friendList, setFriendList] = useState([]);
+    const userId = user_id;
+    const Chats = chats;
+    console.log(Chats);
+    if (Chats) {
+        
+    }
 
     return(
         <div className="sidebar">
             <div className="chats">
-                <Searchbar placeholder="Search or start new chat"/>
-                {/* {friendList.map((friend, latestMessage) => (
-                    <SidebarChat  />
-                ))} */}
+                <Searchbar placeholder="Search or start new chat" user_id={userId} />
+                {(Chats) && Chats.map((chat) => (
+                    <SidebarChat />
+                ))}
                 <SidebarChat />
                 <SidebarChat />
                 <SidebarChat />

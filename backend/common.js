@@ -6,6 +6,7 @@ var getUserObjectId = async(userId)=>{
     var writerId = ""
     try{
         const response = await User.findOne({userId:userId});
+        // console.log(response);
         if (response !=null){writerId = response._id}
     }catch(err){
         console.log(err)
@@ -14,8 +15,8 @@ var getUserObjectId = async(userId)=>{
 }
 
 // Obtaining username from userId
-const getUsername = async (userId) => {
-    const username = "";
+var getUsername = async (userId) => {
+    var username = "";
     try{
         const response = await User.findOne({userId:userId});
         if (response != null) 
@@ -26,4 +27,5 @@ const getUsername = async (userId) => {
     return username;
 }
 
-module.exports = getUserObjectId
+module.exports.getUserObjectId = getUserObjectId;
+module.exports.getUsername = getUsername;
