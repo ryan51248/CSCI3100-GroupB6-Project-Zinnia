@@ -33,13 +33,8 @@ function Chat({user_id}) {
     // Obtaining messages
     const getMessages = async (chat_id) => {
         await fetch("http://localhost:8080/private/displayMessage", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            mode: 'cors',
-            body: JSON.stringify({
-                chatObjectId: chat_id})
+            method: 'POST', headers: {'Content-Type': 'application/json',},
+            mode: 'cors', body: JSON.stringify({chatObjectId: chat_id})
         })
         .then(res => {
             return res.json();
@@ -122,7 +117,6 @@ function Chat({user_id}) {
     return(
         <div className="chat">
             <div className="chat-body">
-                {/* <Sidebar user_id={userId} chats={chats}/> */}
                 <div className="sidebar">
                     <div className="chats">
                         <Searchbar placeholder="Search or start new chat" user_id={userId} className="chats"/>
@@ -130,7 +124,7 @@ function Chat({user_id}) {
                                 <div className="sidebarChat" onClick={() => handleClick(chat._id)} key={chat._id}>
                                     <img height="80" width="80" src={(chat.user[0].userId === userId) ? (chat.user[1].photo && Buffer.from(chat.user[1]?.photo,"base64").toString("ascii")) : (chat.user[0].photo && Buffer.from(chat.user[0]?.photo,"base64").toString("ascii"))}/>
                                     <div className="sidebarChat-info">
-                                        {(chat.user[0].userId === userId) ? <h2>{chat.user[1].username && chat.user[1].username}</h2> : <h2>{chat.user[0].username && chat.user[0].username}</h2>}
+                                        {(chat.user[0].userId === userId) ? <h2>{chat.user[1].username && chat.user[1].username}</h2> : <h1>{chat.user[0].username && chat.user[0].username}</h1>}
                                         {chat.chatHistory[chat.chatHistory.length-1] ? <p>{chat.chatHistory[chat.chatHistory.length-1].username}: {chat.chatHistory[chat.chatHistory.length-1].text}</p> : <p>&nbsp;</p>}
                                     </div>  
                                 </div>

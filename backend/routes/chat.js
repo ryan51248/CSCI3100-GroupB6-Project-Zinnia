@@ -168,7 +168,7 @@ router.post("/private/displayMessage",async(req,res)=>{
 router.post("/private/friendlist", async(req,res)=>{
     User.findOne({userId:req.body.userId})
     .select(["friend"])
-    .sort()
+    .populate("friend", ["username", "userId", "photo"])
     .exec((err, results) => {
         if (err){
             console.log(err);

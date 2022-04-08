@@ -15,15 +15,8 @@ function Messages({messages, user_id, chat_id, participants}){
     const sendMessage = async (e) => {
         e.preventDefault();
         await fetch("http://localhost:8080/private/sendMessage", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                userId: user_id,
-                chatObjectId: chatId,
-                text: input}),
-            mode: 'cors',
+            method: 'POST', headers: {'Content-Type': 'application/json',},
+            body: JSON.stringify({userId: user_id, chatObjectId: chatId, text: input}), mode: 'cors',
         });
         setInput("");
     }
