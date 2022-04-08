@@ -14,7 +14,7 @@ var getUserObjectId = async(userId)=>{
     return writerId;
 }
 
-// Obtaining username from userId
+// Convert userId to corresponding Username
 var getUsername = async (userId) => {
     var username = "";
     try{

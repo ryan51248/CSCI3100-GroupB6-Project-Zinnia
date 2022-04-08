@@ -9,20 +9,26 @@ expected function:
 
 */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef} from "react";
 import "./Chat.css" 
-import Sidebar from "./sidebar/Sidebar"
 import Messages from "./message/Messages";
+import Searchbar from "./Searchbar";
 import Pusher from 'pusher-js';
+import {Buffer} from 'buffer';
 
 function Chat({user_id}) {
 
-    // const chatId = chat_id;
-    const [chatId, setChatId] = useState("624c4ce3ec2df708252fbc7b");
+    const [currentChatId, setCurrentChatId] = useState("");
     // const userId = user_id;
-    const userId = 2;
+    const userId = 1;
     const [messages, setMessages] = useState([]);
     const [chats, setChats] = useState([]);
+    const [participants, setParticipants] = useState([]);
+    const [didMount, setDidMount] = useState(false);
+    const pusher = useRef(null);
+    const handleClick = (new_chat_id) => {
+        setCurrentChatId(new_chat_id);
+    }
 
     // Obtaining messages
     const getMessages = async (chat_id) => {
@@ -39,11 +45,10 @@ function Chat({user_id}) {
             return res.json();
         })
         .then(data => {
-            // console.log(data);
-            // console.log(data.chatHistory);
+            console.log(data);
+            setParticipants(data.user);
             setMessages(data.chatHistory);
         })
-        .catch((e) => console.log(e));
     }
 
     //Obtaining chats
@@ -57,64 +62,82 @@ function Chat({user_id}) {
             return chats;
         })
         .then(chats => {
-            setChatId(chats[0]._id);
+            console.log(chats);
+            setCurrentChatId(chats[0]._id);
             return chats[0]._id;
         })
-        // .then((chat_id) => {
-            
-        // })
+        .then(chat_id => {
+            getMessages(chat_id);
+        })
     }
 
     //componentDidMount
     useEffect(() => {
-        getChats(userId);    
-        getMessages(chatId);
+        pusher.current = new Pusher('9bfa9c67db40709d3f03', {cluster: 'ap1'});
+        setDidMount(true);
+        getChats(userId);
     }, []);
+
+    useEffect(() => {
+        if (didMount){
+            getMessages(currentChatId);
+        }
+    }, [currentChatId])
 
     // Pusher for updating messages
     useEffect(() => {
-        const messagePusher = new Pusher('9bfa9c67db40709d3f03', 
-            {
-                cluster: 'ap1'
-            }
-        );
-
-        const messageChannel = messagePusher.subscribe('messages');
-        messageChannel.bind('insertedMessages', (newMessage) => {
+        const channel = pusher.current.subscribe('messages');
+        channel.bind('insertedMessages', (newMessage) => {
             console.log(newMessage);
             setMessages([...messages, newMessage]);
+            getChats(userId);
         });
 
         return () => {
-            messageChannel.unbind_all();
-            messageChannel.unsubscribe();
+            channel.unbind_all();
+            channel.unsubscribe();
         }
     }, [messages]);
 
-    //Pusher for updating chats
-    // useEffect(() => {
-    //     const chatPusher = new Pusher('9bfa9c67db40709d3f03', 
-    //         {
-    //             cluster: 'ap1'
-    //         }
-    //     );
+    //Pusher for adding new chat
+    useEffect(() => {
+        const channel = pusher.current.subscribe('chats');
+        channel.bind('insertedChats', (newChat) => {
+            setChats(() => {
+                const unsorted = [...chats, newChat];
+                unsorted.sort((a, b) => {
+                    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+                })
+                console.log(unsorted);
+                return unsorted;
+            })
+        });
 
-    //     const chatChannel = chatPusher.subscribe('chats');
-    //     chatChannel.bind('insertedChats', (newChat) => {
-    //         setMessages([...chats, newChat]);
-    //     });
-
-    //     return () => {
-    //         chatChannel.unbind_all();
-    //         chatChannel.unsubscribe();
-    //     }
-    // }, [chats]);
+        return () => {
+            channel.unbind_all();
+            channel.unsubscribe();
+        }
+    }, [chats]);
 
     return(
         <div className="chat">
             <div className="chat-body">
-                <Sidebar user_id={userId} chats={chats}/>
-                <Messages key={chatId} messages={messages} user_id={userId} chat_id={chatId}/>
+                {/* <Sidebar user_id={userId} chats={chats}/> */}
+                <div className="sidebar">
+                    <div className="chats">
+                        <Searchbar placeholder="Search or start new chat" user_id={userId} className="chats"/>
+                            {chats.map((chat) => (
+                                <div className="sidebarChat" onClick={() => handleClick(chat._id)} key={chat._id}>
+                                    <img height="80" width="80" src={(chat.user[0].userId === userId) ? (chat.user[1].photo && Buffer.from(chat.user[1]?.photo,"base64").toString("ascii")) : (chat.user[0].photo && Buffer.from(chat.user[0]?.photo,"base64").toString("ascii"))}/>
+                                    <div className="sidebarChat-info">
+                                        {(chat.user[0].userId === userId) ? <h2>{chat.user[1].username && chat.user[1].username}</h2> : <h2>{chat.user[0].username && chat.user[0].username}</h2>}
+                                        {chat.chatHistory[chat.chatHistory.length-1] ? <p>{chat.chatHistory[chat.chatHistory.length-1].username}: {chat.chatHistory[chat.chatHistory.length-1].text}</p> : <p>&nbsp;</p>}
+                                    </div>  
+                                </div>
+                            ))}
+                    </div>
+                </div>
+                <Messages key={currentChatId} messages={messages} user_id={userId} chat_id={currentChatId} participants={participants}/>
             </div>
         </div>
     );
